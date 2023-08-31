@@ -1,80 +1,80 @@
 from selenium import webdriver
-from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+
+import re
 import time
 import pandas as pd
 
-# Set the path to the geckodriver (Firefox driver)
+#setting chrome driver path
+# Init:
 gecko_path = 'C:/Users/ASUS/Python Folder/Drivers/geckodriver.exe'
-
-# Initialize the geckodriver service
-service = Service(gecko_path)
-
-# Configure options for Firefox driver
+ser = Service(gecko_path)
 options = webdriver.firefox.options.Options()
-options.headless = False  # Set to True if you want to run the browser in headless mode
+options.headless = False
+driver = webdriver.Firefox(options = options, service=ser)
 
-# Initialize the Firefox driver with the service and options
-driver = webdriver.Firefox(options=options, service=service)
-
-# URL of the website to scrape
 url = 'https://www.ted.com/talks?page=1'
 
-# Load the website
+#calling the website url
 driver.get(url)
 
-# Set the page limit flag
+# setting boolean parameter for page limit
 page_limit = False
 
-if page_limit:
+if page_limit == True:
     max_pages = 3
-else:
-    max_pages = 100
+else: max_pages = 100
 
-# Lists to store scraped data
+
+
+# declaring lists to store scraped data
 video_titles = []
 speaker = []
 date = []
-video_links = []
+video_links=[]
 
-# Loop through pages to scrape data
-for i in range(2, max_pages + 1):
+
+
+
+
+for i in range(2,max_pages+1):
+    
+
+    names = driver.find_elements(By.XPATH,'//div[@class="media__message"]/h4[2]/a')
+    for name in range(len(names)):
+        video_titles.append(names[name].text) 
+
+
+    course = driver.find_elements(By.XPATH,'//div[@class="media__message"]/h4[1]')
+    for cs in range(len(course)):
+        speaker.append(course[cs].text)
+
+
+    sectros = driver.find_elements(By.XPATH,'//div[@class="meta"]/span/span')
+    for sectro in range(len(sectros)):
+        date.append(sectros[sectro].text)
+
+    Links = driver.find_elements(By.XPATH,'//div[@class="media__message"]/h4[2]/a')
+    for link in range(len(Links)):
+        video_links.append(Links[link].get_attribute('href'))
+
+     
+    # using time.sleep for a slight delay in code to interact and find all the elements
     time.sleep(1)
-    
-    # Extract video titles
-    names = driver.find_elements(By.XPATH, '//div[@class="media__message"]/h4[2]/a')
-    for name in names:
-        video_titles.append(name.text)
-    
-    # Extract speaker names
-    course = driver.find_elements(By.XPATH, '//div[@class="media__message"]/h4[1]')
-    for cs in course:
-        speaker.append(cs.text)
-    
-    # Extract dates
-    sectros = driver.find_elements(By.XPATH, '//div[@class="meta"]/span/span')
-    for sectro in sectros:
-        date.append(sectro.text)
-    
-    # Extract video links
-    Links = driver.find_elements(By.XPATH, '//div[@class="media__message"]/h4[2]/a')
-    for link in Links:
-        video_links.append(link.get_attribute('href'))
-    
-    # Navigate to the next page
-    driver.get('https://www.ted.com/talks?page=' + str(i))
+    driver.get('https://www.ted.com/talks?page='+str(i))
+# creating a dictionary to store the scraped data in previous step
+data_dictionary = {'Name': video_titles, 'Course': speaker, 'Sector': date, 'Links' : video_links }
 
-# Create a dictionary to store the scraped data
-data_dictionary = {'Name': video_titles, 'Speaker': speaker, 'Date': date, 'Links': video_links}
-
-# Create a DataFrame from the dictionary
-df = pd.DataFrame.from_dict(data_dictionary)
-
-# Sort the DataFrame by video name
+# storing the scraped data in csv file
+#dataframe = pd.DataFrame(data_dictionary)
+#dataframe.to_csv('data.csv', mode='a', index=False, header=False, encoding="cp1252")
+df = pd.DataFrame.from_dict(data_dictionary, orient='index')
+df = df.transpose()
 df = df.sort_values(by=['Name'], ascending=True)
+df.to_csv('C:/Users/ASUS/Python Folder/websc/data_selenium.csv', index=False)
 
-# Save the DataFrame to a CSV file
-df.to_csv('data_selenium.csv', index=False)
 
-# Close the driver instance and browser window
+
+# closing the driver instance and browser window
 driver.quit()
